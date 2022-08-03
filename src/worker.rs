@@ -3,7 +3,6 @@ use std::time::Duration;
 use std::thread;
 use futures::executor::block_on;
 
-#[derive(Clone)]
 pub struct WorkerPool {
     addr: Addr<TaskWorker>
 }
