@@ -6,7 +6,6 @@ use crate::worker;
 
 const TASK_QUEUE_NAME: &str = "task";
 
-#[derive(Clone)]
 pub struct TaskDispatcher{
     pub pool: WorkerPool
 }
@@ -18,7 +17,7 @@ pub struct TaskRequest {
     duration: u64
 }
 
-impl <'a> TaskDispatcher {
+impl TaskDispatcher {
 
     pub fn run(&self) {
         // Open connection.
