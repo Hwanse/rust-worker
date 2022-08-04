@@ -1,15 +1,13 @@
+use crate::encode;
 use actix::prelude::*;
-use std::time::Duration;
-use std::thread;
-use futures::executor::block_on;
 
 pub struct WorkerPool {
-    addr: Addr<TaskWorker>
+    addr: Addr<TaskWorker>,
 }
 
 #[derive(Debug)]
 pub struct TaskMessage {
-    pub duration: u64
+    pub input_name: String,
 }
 
 impl Message for TaskMessage {
@@ -26,27 +24,19 @@ impl Handler<TaskMessage> for TaskWorker {
     type Result = ();
 
     fn handle(&mut self, msg: TaskMessage, _ctx: &mut Self::Context) -> Self::Result {
-        let id = thread::current().id();
-
-        println!("{:?} : task work start.. (duration {})", id, msg.duration);
-        thread::sleep(Duration::from_secs(msg.duration));
-        println!("{:?} : task work end.. (duration {})", id, msg.duration);
+        println!("task request message : {:?}", msg);
+        encode::acc_encode(msg.input_name.as_str());
     }
 }
 
 impl WorkerPool {
-    pub fn new(count: usize) -> WorkerPool {
-        let addr = SyncArbiter::start(count, || TaskWorker);
+    pub fn new(pool_size: usize) -> WorkerPool {
         WorkerPool {
-            addr
+            addr: SyncArbiter::start(pool_size, || TaskWorker),
         }
     }
 
     pub fn send(&self, msg: TaskMessage) {
         self.addr.do_send(msg);
-        // block_on(async {
-        //     self.addr.do_send(msg);
-        // });
     }
 }
-
