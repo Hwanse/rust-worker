@@ -1,39 +1,40 @@
-use actix_rt::Arbiter;
-use serde::Deserialize;
-use amiquip::{Channel, Connection, Consumer, ConsumerMessage, ConsumerOptions, FieldTable, Queue, QueueDeclareOptions, Result};
-use worker::{WorkerPool, TaskMessage};
 use crate::worker;
+use amiquip::{Connection, ConsumerMessage, ConsumerOptions, QueueDeclareOptions};
+use serde::Deserialize;
+use worker::{TaskMessage, WorkerPool};
 
 const TASK_QUEUE_NAME: &str = "task";
 
-pub struct TaskDispatcher{
-    pub pool: WorkerPool
+pub struct TaskDispatcher {
+    pub pool: WorkerPool,
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct TaskRequest {
     #[serde(default)]
-    duration: u64
+    input_name: String,
 }
 
 impl TaskDispatcher {
-
     pub fn run(&self) {
         // Open connection.
-        let mut connection = Connection::insecure_open("amqp://guest:guest@localhost:5672").unwrap();
+        let mut connection =
+            Connection::insecure_open("amqp://guest:guest@localhost:5672").unwrap();
 
         // Open a channel - None says let the library choose the channel ID.
         let channel = connection.open_channel(None).unwrap();
 
         // Declare the durable queue we will consume from.
-        let queue = channel.queue_declare(
-            TASK_QUEUE_NAME,
-            QueueDeclareOptions {
-                durable: false,
-                ..QueueDeclareOptions::default()
-            },
-        ).unwrap();
+        let queue = channel
+            .queue_declare(
+                TASK_QUEUE_NAME,
+                QueueDeclareOptions {
+                    durable: false,
+                    ..QueueDeclareOptions::default()
+                },
+            )
+            .unwrap();
 
         // Set QOS to only send us 1 message at a time.
         channel.qos(0, 1, false).unwrap();
@@ -46,7 +47,9 @@ impl TaskDispatcher {
             match message {
                 ConsumerMessage::Delivery(delivery) => {
                     let task: TaskRequest = serde_json::from_slice(&delivery.body).unwrap();
-                    self.pool.send(TaskMessage { duration: task.duration });
+                    self.pool.send(TaskMessage {
+                        input_name: task.input_name,
+                    });
                     consumer.ack(delivery).unwrap();
                 }
                 other => {
@@ -56,7 +59,6 @@ impl TaskDispatcher {
             }
         }
 
-        connection.close();
+        connection.close().expect("close error");
     }
-
 }
