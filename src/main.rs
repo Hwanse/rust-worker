@@ -13,6 +13,6 @@ fn main() {
     // start dispatcher on other thread
     thread::spawn(move || dispatcher.run());
 
-    // run actix event loop
-    system.run();
+    // run actix_rt event loop
+    system.run().expect("event loop panic");
 }
