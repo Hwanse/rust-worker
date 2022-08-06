@@ -5,7 +5,7 @@ use worker::{TaskMessage, WorkerPool};
 
 const TASK_QUEUE_NAME: &str = "task";
 
-pub struct TaskDispatcher {
+pub struct TaskDispatch {
     pub pool: WorkerPool,
 }
 
@@ -16,7 +16,7 @@ pub struct TaskRequest {
     input_name: String,
 }
 
-impl TaskDispatcher {
+impl TaskDispatch {
     pub fn run(&self) {
         // Open connection.
         let mut connection =
